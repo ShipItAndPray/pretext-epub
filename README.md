@@ -1,5 +1,9 @@
 # @shipitandpray/pretext-epub
 
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://shipitandpray.github.io/pretext-epub/) [![GitHub](https://img.shields.io/github/stars/ShipItAndPray/pretext-epub?style=social)](https://github.com/ShipItAndPray/pretext-epub)
+
+> **[View Live Demo](https://shipitandpray.github.io/pretext-epub/)**
+
 [![npm version](https://img.shields.io/npm/v/@shipitandpray/pretext-epub.svg)](https://www.npmjs.com/package/@shipitandpray/pretext-epub)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/@shipitandpray/pretext-epub)](https://bundlephobia.com/package/@shipitandpray/pretext-epub)
 
