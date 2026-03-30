@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pretext-epub Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    .demo-header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 24px 32px;
+      text-align: center;
+    }
+    .demo-header h1 { font-size: 28px; margin-bottom: 8px; }
+    .demo-header p { opacity: 0.7; font-size: 14px; }
+
+    .demo-controls {
+      max-width: 720px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+
+    .demo-controls textarea {
+      width: 100%;
+      height: 200px;
+      font-family: Georgia, serif;
+      font-size: 15px;
+      line-height: 1.6;
+      padding: 16px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      resize: vertical;
+    }
+
+    .demo-controls textarea:focus {
+      outline: none;
+      border-color: #4a7c59;
+    }
+
+    .demo-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .demo-actions button {
+      padding: 10px 24px;
+      background: #4a7c59;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .demo-actions button:hover { background: #3d6b4b; }
+
+    .demo-actions select, .demo-actions input {
+      padding: 8px 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .demo-stats {
+      font-size: 13px;
+      color: #666;
+      margin-top: 8px;
+    }
+
+    /* Reader area */
+    .reader-container {
+      max-width: 720px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+
+    .reader-wrapper {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    .reader-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+    .reader-header .chapter { font-style: italic; color: #666; }
+    .reader-header .page-num { color: #999; font-variant-numeric: tabular-nums; }
+
+    .reader-page {
+      padding: 32px 40px;
+      min-height: 500px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 16px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    .reader-page--sepia { background: #f4ecd8; color: #5b4636; }
+    .reader-page--dark { background: #1a1a1a; color: #e0e0e0; }
+    .reader-page--light { background: #fff; color: #1a1a1a; }
+
+    .reader-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      border-top: 1px solid #eee;
+    }
+
+    .reader-nav button {
+      padding: 8px 20px;
+      background: #eee;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .reader-nav button:hover:not(:disabled) { background: #ddd; }
+    .reader-nav button:disabled { opacity: 0.3; cursor: default; }
+
+    .reader-progress {
+      flex: 1;
+      margin: 0 16px;
+    }
+    .reader-progress__bar {
+      height: 4px;
+      background: #eee;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .reader-progress__fill {
+      height: 100%;
+      background: #4a7c59;
+      transition: width 0.2s;
+    }
+
+    .reader-slider {
+      padding: 4px 20px 16px;
+    }
+    .reader-slider input { width: 100%; cursor: pointer; }
+
+    .jump-to {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 0 20px 12px;
+      font-size: 13px;
+    }
+    .jump-to input {
+      width: 60px;
+      padding: 4px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      text-align: center;
+    }
+    .jump-to button {
+      padding: 4px 12px;
+      background: #eee;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="demo-header">
+  <h1>@shipitandpray/pretext-epub</h1>
+  <p>Instant page jumps &bull; Exact progress &bull; O(1) page access &bull; Powered by @chenglou/pretext</p>
+</div>
+
+<div class="demo-controls">
+  <textarea id="textInput" placeholder="Paste or type text here to see it paginated...">Call me Ishmael. Some years ago — never mind how long precisely — having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen and regulating the circulation.
+
+Whenever I find myself growing grim about the mouth; whenever it is a damp, drizzly November in my soul; whenever I find myself involuntarily pausing before coffin warehouses, and bringing up the rear of every funeral I meet; and especially whenever my hypos get such an upper hand of me, that it requires a strong moral principle to prevent me from deliberately stepping into the street, and methodically knocking people's hats off — then, I account it high time to get to sea as soon as I can.
+
+This is my substitute for pistol and ball. With a philosophical flourish Cato throws himself upon his sword; I quietly take to the ship. There is nothing surprising in this. If they but knew it, almost all men in their degree, some time or other, cherish very nearly the same feelings towards the ocean with me.
+
+There now is your insular city of the Manhattoes, belted round by wharves as Indian isles by coral reefs — commerce surrounds it with her surf. Right and left, the streets take you waterward. Its extreme downtown is the battery, where that noble mole is washed by waves, and cooled by breezes, which a few hours previous were out of sight of land.
+
+Look at the crowds of water-gazers there. Circumambulate the city of a dreamy Sabbath afternoon. Go from Corlears Hook to Coenties Slip, and from thence, by Whitehall, northward. What do you see? — Posted like silent sentinels all around the town, stand thousands upon thousands of mortal men fixed in ocean reveries.
+
+Some leaning against the spiles; some seated upon the pier-heads; some looking over the bulwarks of ships from China; some high aloft in the rigging, as if striving to get a still better seaward peep. But these are all landsmen; of week days pent up in lath and plaster — tied to counters, nailed to benches, clinched to desks.
+
+How then is this? Are the green fields gone? What do they here? But look! here come more crowds, pacing straight for the water, and seemingly bound for a dive. Strange! Nothing will content them but the extremest limit of the land; loitering under the shady lee of yonder warehouses will not suffice. No.
+
+They must get just as nigh the water as they possibly can without falling in. And there they stand — miles of them — leagues. Inlanders all, they come from lanes and alleys, streets and avenues — north, south, east, and west. Yet here they all unite.
+
+Tell me, does the magnetic virtue of the needles of the compasses of all those ships attract them thither? Once more. Say you are in the country; in some high land of lakes. Take almost any path you please, and ten to one it carries you down in a dale, and leaves you there by a pool in the stream.
+
+There is magic in it. Let the most absent-minded of men be plunged in his deepest reveries — stand that man on his legs, set his feet a-going, and he will infallibly lead you to water, if water there be in all that region.</textarea>
+
+  <div class="demo-actions">
+    <button id="paginateBtn">Paginate</button>
+    <select id="themeSelect">
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+      <option value="sepia" selected>Sepia</option>
+    </select>
+    <label>
+      Lines/page:
+      <input id="linesPerPage" type="number" value="20" min="5" max="100" style="width:60px" />
+    </label>
+  </div>
+  <div id="stats" class="demo-stats"></div>
+</div>
+
+<div id="readerArea" class="reader-container hidden">
+  <div class="reader-wrapper">
+    <div class="reader-header">
+      <span class="chapter" id="chapterTitle">Moby-Dick</span>
+      <span class="page-num" id="pageLabel">1 / 1</span>
+    </div>
+    <div class="reader-page reader-page--sepia" id="pageContent"></div>
+    <div class="reader-nav">
+      <button id="prevBtn">&larr; Prev</button>
+      <div class="reader-progress">
+        <div class="reader-progress__bar">
+          <div class="reader-progress__fill" id="progressFill" style="width:0%"></div>
+        </div>
+      </div>
+      <button id="nextBtn">Next &rarr;</button>
+    </div>
+    <div class="reader-slider">
+      <input type="range" id="pageSlider" min="1" max="1" value="1" />
+    </div>
+    <div class="jump-to">
+      <span>Jump to page:</span>
+      <input type="number" id="jumpInput" min="1" max="1" value="1" />
+      <button id="jumpBtn">Go</button>
+      <span id="jumpTime"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─── Simple text-based paginator for the demo ───
+  // This demonstrates the concept: pre-computed page breaks with O(1) access.
+  // The actual library uses @chenglou/pretext for exact glyph-level measurement.
+
+  let pages = [];
+  let currentPage = 0;
+
+  function paginateText(text, linesPerPage) {
+    const start = performance.now();
+
+    // Split into paragraphs
+    const paragraphs = text.split(/\n\n+/).filter(p => p.trim());
+
+    // Estimate lines per paragraph (approx 80 chars per line)
+    const charsPerLine = 70;
+    const allLines = [];
+
+    for (const para of paragraphs) {
+      const words = para.trim().split(/\s+/);
+      let line = '';
+      for (const word of words) {
+        if ((line + ' ' + word).length > charsPerLine && line) {
+          allLines.push(line);
+          line = word;
+        } else {
+          line = line ? line + ' ' + word : word;
+        }
+      }
+      if (line) allLines.push(line);
+      allLines.push(''); // paragraph break
+    }
+
+    // Break into pages (pre-computed, O(1) access)
+    pages = [];
+    for (let i = 0; i < allLines.length; i += linesPerPage) {
+      pages.push(allLines.slice(i, i + linesPerPage).join('\n'));
+    }
+
+    const elapsed = performance.now() - start;
+    return { totalPages: pages.length, timeMs: elapsed, totalLines: allLines.length };
+  }
+
+  function renderPage(pageNum) {
+    const jumpStart = performance.now();
+
+    currentPage = Math.max(0, Math.min(pageNum, pages.length - 1));
+    const content = pages[currentPage]; // O(1) array lookup
+
+    const jumpMs = performance.now() - jumpStart;
+
+    document.getElementById('pageContent').textContent = content;
+    document.getElementById('pageLabel').textContent = `${currentPage + 1} / ${pages.length}`;
+    document.getElementById('progressFill').style.width = `${((currentPage + 1) / pages.length) * 100}%`;
+    document.getElementById('pageSlider').value = currentPage + 1;
+    document.getElementById('prevBtn').disabled = currentPage === 0;
+    document.getElementById('nextBtn').disabled = currentPage === pages.length - 1;
+    document.getElementById('jumpTime').textContent = `(${jumpMs.toFixed(3)}ms)`;
+  }
+
+  // Event listeners
+  document.getElementById('paginateBtn').addEventListener('click', () => {
+    const text = document.getElementById('textInput').value;
+    const linesPerPage = parseInt(document.getElementById('linesPerPage').value) || 20;
+
+    if (!text.trim()) return;
+
+    const result = paginateText(text, linesPerPage);
+
+    document.getElementById('stats').textContent =
+      `Paginated ${result.totalLines} lines into ${result.totalPages} pages in ${result.timeMs.toFixed(2)}ms`;
+
+    const slider = document.getElementById('pageSlider');
+    slider.max = result.totalPages;
+    slider.value = 1;
+
+    const jumpInput = document.getElementById('jumpInput');
+    jumpInput.max = result.totalPages;
+    jumpInput.value = 1;
+
+    document.getElementById('readerArea').classList.remove('hidden');
+    renderPage(0);
+  });
+
+  document.getElementById('prevBtn').addEventListener('click', () => renderPage(currentPage - 1));
+  document.getElementById('nextBtn').addEventListener('click', () => renderPage(currentPage + 1));
+
+  document.getElementById('pageSlider').addEventListener('input', (e) => {
+    renderPage(parseInt(e.target.value) - 1);
+  });
+
+  document.getElementById('jumpBtn').addEventListener('click', () => {
+    const page = parseInt(document.getElementById('jumpInput').value) - 1;
+    renderPage(page);
+  });
+
+  document.getElementById('themeSelect').addEventListener('change', (e) => {
+    const pageEl = document.getElementById('pageContent');
+    pageEl.className = `reader-page reader-page--${e.target.value}`;
+  });
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (pages.length === 0) return;
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); renderPage(currentPage + 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); renderPage(currentPage - 1); }
+  });
+
+  // Swipe support
+  let touchStartX = 0;
+  document.getElementById('pageContent')?.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+  }, { passive: true });
+  document.getElementById('pageContent')?.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) {
+      if (dx < 0) renderPage(currentPage + 1);
+      else renderPage(currentPage - 1);
+    }
+  }, { passive: true });
+
+  // Auto-paginate on load
+  document.getElementById('paginateBtn').click();
+</script>
+
+</body>
+</html>
